@@ -13,12 +13,12 @@ namespace dtp7_contact_list
             public List<string> phone;
             public List<string> address;
             public Person() { }
-            public Person(string persname, string surname)
+            public Person(string persname, string surname, List<string> phone)
             {
-                this.persname = persname; this.surname = surname;
+                this.persname = persname; this.surname = surname; this.phone = phone;
             }
             public void AddPhone(string phone)
-                => this.phone.Add(phone);
+                => this.phone.Add(phone);//!!
             public void AddAddress(string address)
                 => this.address.Add(address);
             public string PhoneList
@@ -34,7 +34,7 @@ namespace dtp7_contact_list
             public void Print()
             {
                 string phoneList = String.Join(", ", phone);
-                string addressList = String.Join(", ", address);
+                string addressList = String.Join(", ", address);//!!
                 Console.WriteLine($"{persname} {surname}; {phoneList}; {addressList}; {birthdate}");
             }
         }
@@ -71,7 +71,7 @@ namespace dtp7_contact_list
                 }
                 else if (commandLine[0] == "list")
                 {
-                    if (commandLine.Length == 1)
+                    if (commandLine.Length == 1) //FIXME: inget händer som list innan load
                     {
                         ListContactList();
                     }
@@ -85,13 +85,13 @@ namespace dtp7_contact_list
                 {
                     if (commandLine.Length == 1)
                     {
-                        
+
                         LoadContactListFromFile(lastFileName);
                     }
                     else if (commandLine.Length == 2)
                     {
                         lastFileName = GetUserDirectory(commandLine[1]); // commandLine[1] is the first argument
-                        // FIXME: Throws System.IO.FileNotFoundException: 
+
                         LoadContactListFromFile(lastFileName);
                     }
                     else
@@ -126,11 +126,13 @@ namespace dtp7_contact_list
                         string persname = Console.ReadLine();
                         Console.Write("surname: ");
                         string surname = Console.ReadLine();
-                        AddAndSetupNewPerson(persname, surname);
+                        Console.Write("phone (ange flera telefonnummer separerade med ,): ");  // HÄR!!
+                        string phone = Console.ReadLine();
+                        AddAndSetupNewPerson(persname, surname, phone.Split(',').ToList());  // HÄR!!
                     }
                     else if (commandLine.Length == 3)
                     {
-                        AddAndSetupNewPerson(commandLine[1], commandLine[2]);
+                        AddAndSetupNewPerson(commandLine[1], commandLine[2], commandLine[3..^0].ToList()); // Här!!
                     }
                     else
                     {
@@ -150,7 +152,7 @@ namespace dtp7_contact_list
             } while (commandLine[0] != "quit");
         }
 
-        private static void DeleteAllPersons(string persname, string surname)
+        private static void DeleteAllPersons(string persname, string surname) //TODO: lägg till utskrift om personen inte finns
         {
             int found;
             do
@@ -177,9 +179,9 @@ namespace dtp7_contact_list
             }
         }
 
-        private static void AddAndSetupNewPerson(string persname, string surname)
+        private static void AddAndSetupNewPerson(string persname, string surname, List<string> Phone)
         {
-            Person newPerson = new Person(persname, surname);
+            Person newPerson = new Person(persname, surname, Phone);
             Console.WriteLine("Add multiple phones, end with empty string:");
             do
             {
@@ -221,21 +223,25 @@ namespace dtp7_contact_list
 
         private static void LoadContactListFromFile(string lastFileName)
         {
-            try {
-            using (StreamReader infile = new StreamReader(lastFileName))
+            try
             {
-                string line;
-                while ((line = infile.ReadLine()) != null)
+                using (StreamReader infile = new StreamReader(lastFileName))
                 {
-                    LoadContact(line); // Also prints the line loaded
+                    string line;
+                    while ((line = infile.ReadLine()) != null)
+                    {
+                        LoadContact(line); // Also prints the line loaded
+                    }
                 }
+                Console.WriteLine("load successful!");
             }
-        } catch (Exception ex)
+            catch (Exception ex)
             {
                 string[] fileName = lastFileName.Split(@"\");
                 Console.WriteLine($"could not find file named {fileName.Last()}");
             }
-    }
+            
+        }
 
         private static void LoadContact(string lineFromAddressFile)
         {
@@ -243,10 +249,11 @@ namespace dtp7_contact_list
             Person newPerson = new Person();
             newPerson.persname = attrs[0];
             newPerson.surname = attrs[1];
-            newPerson.phone = new List<string>(attrs[2].Split(';'));
+            newPerson.phone = new List<string>(attrs[2].Split(','));
             newPerson.address = new List<string>(attrs[3].Split(';'));
             newPerson.birthdate = attrs[4];
             contactList.Add(newPerson);
+            
         }
         private static void PrintHelpMessage()
         {
